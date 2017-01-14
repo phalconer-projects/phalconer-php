@@ -1,0 +1,24 @@
+{
+    "name": "phalconer/phalconer-php",
+    "description": "Phalconer",
+    "keywords": ["phalconer", "web", "framework"],
+    "homepage": "https://github.com/phalconer-projects/phalconer-php/",
+    "type": "project",
+    "license": "CC0",
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=5.6.0",
+        "ext-phalcon": "~3.0",
+        "phalcon/incubator": "~3.0"
+    },
+    "require-dev": {
+        "codeception/base": "^2.2.3",
+        "codeception/verify": "~0.3.1",
+        "codeception/specify": "~0.4.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "src\\": ""
+        }
+    }
+}
