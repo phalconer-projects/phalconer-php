@@ -2,7 +2,7 @@
 
 namespace phalconer\phalcon;
 
-require_once dirname(__DIR__) . '/helpers.php';
+require_once __DIR__ . '/helpers.php';
 
 use Phalcon\Di;
 use Phalcon\DiInterface;
