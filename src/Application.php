@@ -1,6 +1,6 @@
 <?php
 
-namespace phalconer\phalcon;
+namespace phalconer;
 
 require_once __DIR__ . '/helpers.php';
 
