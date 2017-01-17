@@ -36,7 +36,7 @@ class Application
         if ($configLoader !== false) {
             $loader = new Loader();
             if (isset($configLoader['namespaces'])) {
-                $loader->registerNamespaces($configLoader['namespaces'])->register();
+                $loader->registerNamespaces($configLoader['namespaces']->toArray())->register();
             }
         }
         
@@ -103,7 +103,7 @@ class Application
             if ($configValue instanceof \Closure) {
                 $this->di->setShared($name, $configValue);
             } else {
-                if (!is_string($name) && is_string($configValue)) {
+                if (is_string($configValue)) {
                     $name = $configValue;
                     $configValue = new Config([]);
                 }
