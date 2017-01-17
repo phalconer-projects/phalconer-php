@@ -20,23 +20,15 @@ class UrlServiceProvider extends AbstractServiceProvider
      */
     public function register()
     {
-        if (is_array($this->config)) {
+        if (is_config($this->config)) {
             $config = $this->config;
             
             $this->di->setShared(
                 $this->serviceName,
                 function() use($config) {
                     $url = new Url();
-                    if (!empty($config['staticBaseUri'])) {
-                        $url->setStaticBaseUri($config['staticBaseUri']);
-                    } else {
-                        $url->setStaticBaseUri('/');
-                    }
-                    if (!empty($config['baseUri'])) {
-                        $url->setBaseUri($config['baseUri']);
-                    } else {
-                        $url->setBaseUri('/');
-                    }
+                    $url->setStaticBaseUri($config->get('staticBaseUri', '/'));
+                    $url->setBaseUri($config->get('baseUri', '/'));
                     return $url;
                 }
             );

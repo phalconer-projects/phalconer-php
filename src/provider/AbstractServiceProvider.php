@@ -4,6 +4,7 @@ namespace phalconer\provider;
 
 use LogicException;
 use Phalcon\DiInterface;
+use Phalcon\Config;
 use Phalcon\Mvc\User\Component;
 
 abstract class AbstractServiceProvider extends Component
@@ -14,11 +15,11 @@ abstract class AbstractServiceProvider extends Component
     protected $serviceName;
     
     /**
-     * @var array
+     * @var Config
      */
     protected $config;
     
-    final public function __construct($serviceName, array $config, DiInterface $di)
+    final public function __construct($serviceName, Config $config, DiInterface $di)
     {
         if ($serviceName) {
             $this->serviceName = $serviceName;
@@ -29,10 +30,7 @@ abstract class AbstractServiceProvider extends Component
         }
         
         if (empty($config)) {
-            $configService = config('phalcon.services', false);
-            if ($configService !== false && isset($configService[$this->serviceName])) {
-                $config = $configService[$this->serviceName];
-            }
+            $config = config('services.' . $this->serviceName, $config);
         }
         $this->config = $config;
         

@@ -2,6 +2,7 @@
 
 namespace phalconer\i18n;
 
+use Phalcon\Config;
 use Phalcon\Translate\AdapterInterface;
 use Phalcon\Translate\Adapter\NativeArray;
 
@@ -23,13 +24,13 @@ class NativeArrayTranslator/* implements AdapterInterface*/
     protected $supportLanguages;
     
     /**
-     * @param array $config
+     * @param Config $config
      */
     public function __construct($config)
     {
         $this->messagesDir = realpath($config['messages'] . '/');
         $this->defaultLanguage = $config['defaultLanguage'];
-        $this->supportLanguages = $config['languages'];
+        $this->supportLanguages = $config->get('languages', []);
     }
 
     public function canTranslate($language)

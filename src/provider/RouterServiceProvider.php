@@ -19,7 +19,7 @@ class RouterServiceProvider extends AbstractServiceProvider
      */
     public function register()
     {
-        if (is_array($this->config)) {
+        if (is_config($this->config)) {
             $config = $this->config;
             
             $this->di->setShared(
@@ -29,9 +29,9 @@ class RouterServiceProvider extends AbstractServiceProvider
                     
                     $router->removeExtraSlashes(true);
                     
-                    if (!empty($config['routes']) && is_array($config['routes'])) {
+                    if (!empty($config['routes']) && is_config($config['routes'])) {
                         foreach ($config['routes'] as $pattern => $params) {
-                            call_user_func_array([$router, "add"], array_merge([$pattern], $params));
+                            call_user_func_array([$router, "add"], array_merge([$pattern], $params->toArray()));
                         }
                     }
                     

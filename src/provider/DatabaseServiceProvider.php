@@ -18,7 +18,7 @@ class DatabaseServiceProvider extends AbstractServiceProvider
      */
     public function register()
     {
-        if (is_array($this->config)) {
+        if (is_config($this->config)) {
             $config = $this->config;
             
             $this->di->setShared(

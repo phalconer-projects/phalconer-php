@@ -4,6 +4,7 @@ namespace phalconer;
 
 require_once __DIR__ . '/helpers.php';
 
+use Phalcon\Config;
 use Phalcon\Di;
 use Phalcon\DiInterface;
 use Phalcon\Di\FactoryDefault;
@@ -25,13 +26,13 @@ class Application
      */
     private $di;
 
-    public function __construct(array $config = [])
+    public function __construct(Config $config)
     {
         /* Init helper config */
         config($config);
         
         /* Init Phalcon loader */
-        $configLoader = config('phalcon.loader', false);
+        $configLoader = config('loader', false);
         if ($configLoader !== false) {
             $loader = new Loader();
             if (isset($configLoader['namespaces'])) {
@@ -42,18 +43,18 @@ class Application
         /* Init Phalcon DI */
         $this->di = new FactoryDefault;
         Di::setDefault($this->di);
-        $this->di->setShared('app', $this);
-        $this->di->setShared('config', new \Phalcon\Config(config('phalcon')));
+        $this->di->setShared('web-app', $this);
+        $this->di->setShared('config', config());
                 
         /** @noinspection PhpIncludeInspection */
-        $services = config('phalcon.services', false);//require CONFIG_PATH . '/services.php';
-        if (is_array($services)) {
+        $services = config('services', false);
+        if (is_config($services)) {
             $this->initializeServices($services);
         }
         
         ErrorHandler::register();
         $this->app = new MvcApplication($this->di);
-        $this->di->setShared('app', $this->app);
+        $this->di->setShared('mvc-app', $this->app);
         $this->app->setDI($this->di);
     }
     
@@ -96,7 +97,7 @@ class Application
      * @param  string[] $services
      * @return $this
      */
-    protected function initializeServices(array $services)
+    protected function initializeServices(Config $services)
     {
         foreach ($services as $name => $configValue) {
             if ($configValue instanceof \Closure) {
@@ -104,7 +105,7 @@ class Application
             } else {
                 if (!is_string($name) && is_string($configValue)) {
                     $name = $configValue;
-                    $configValue = [];
+                    $configValue = new Config([]);
                 }
                 
                 if (isset($configValue['provider'])) {

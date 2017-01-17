@@ -4,6 +4,7 @@ namespace phalconer\provider;
 
 use LogicException;
 use Phalcon\DiInterface;
+use Phalcon\Config;
 
 class ServiceProviderFactory
 {
@@ -17,7 +18,7 @@ class ServiceProviderFactory
         'flash' => FlashServiceProvider::class,
     ];
     
-    public static function make($serviceName, array $config, DiInterface $di)
+    public static function make($serviceName, Config $config, DiInterface $di)
     {
         $providerClass = self::$defaultProviders[$serviceName];
         if (!empty($providerClass)) {
