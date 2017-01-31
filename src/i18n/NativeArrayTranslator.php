@@ -3,51 +3,82 @@
 namespace phalconer\i18n;
 
 use Phalcon\Config;
-use Phalcon\Translate\AdapterInterface;
 use Phalcon\Translate\Adapter\NativeArray;
 
-class NativeArrayTranslator/* implements AdapterInterface*/
+class NativeArrayTranslator extends AbstractTranslator
 {
+    /**
+     * @var array
+     */
+    protected $messages = [];
+    
     /**
      * @var string
      */
     protected $messagesDir;
     
     /**
-     * @var string
-     */
-    protected $defaultLanguage;
-    
-    /**
-     * @var array
-     */
-    protected $supportLanguages;
-    
-    /**
      * @param Config $config
      */
-    public function __construct($config)
+    public function __construct(Config $config = NULL)
     {
-        $this->messagesDir = realpath($config['messages'] . '/');
-        $this->defaultLanguage = $config['defaultLanguage'];
-        $this->supportLanguages = $config->get('languages', []);
-    }
-
-    public function canTranslate($language)
-    {
-        return !empty($language) && in_array($language, $this->supportLanguages);
+        parent::__construct($config);
+        if ($config !== NULL) {
+            $this->setMessages($config->get('messages', []));
+            $this->setMessagesDir($config->get('messagesDir', ''));
+        }
     }
     
-    public function getTranslation($language)
+    /**
+     * {@inheritDoc}
+     */
+    public function makeTranslationAdapter($language = NULL)
     {
-        if (in_array($language, $this->supportLanguages)) {
-            $translationFile = $this->messagesDir . $language . ".php";
-        } else {
-            $translationFile = $this->messagesDir . $this->defaultLanguage . ".php";
+        $lang = $this->getLanguage($language);
+        if (empty($this->messages) && !empty($this->messagesDir)) {
+            $translationFile = $this->messagesDir . $lang . ".php";
+            if (is_file($translationFile)) {
+                $this->messages[$lang] = require $translationFile;
+            }
         }
-        
         return new NativeArray([
-            "content" => require $translationFile,
+            "content" => isset($this->messages[$lang]) ? $this->messages[$lang] : [],
         ]);
+    }
+    
+    /**
+     * @return array
+     */
+    function getMessages()
+    {
+        return $this->messages;
+    }
+
+    /**
+     * @param array $messages
+     * @return \phalconer\i18n\NativeArrayTranslator this
+     */
+    function setMessages($messages)
+    {
+        $this->messages = $messages;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getMessagesDir()
+    {
+        return $this->messagesDir;
+    }
+    
+    /**
+     * @param string $messagesDir
+     * @return \phalconer\i18n\NativeArrayTranslator this
+     */
+    public function setMessagesDir($messagesDir = NULL)
+    {
+        $this->messagesDir = realpath($messagesDir) . '/';
+        return $this;
     }
 }

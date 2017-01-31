@@ -1,0 +1,14 @@
+default:
+    autoload:
+        '': %paths.base%/test
+    suites:
+        story:
+            paths:
+                - %paths.base%/features/story
+            contexts:
+                - story\I18nContext
+        spec:
+            paths:
+                - %paths.base%/features/spec
+            contexts:
+                - spec\StackContext

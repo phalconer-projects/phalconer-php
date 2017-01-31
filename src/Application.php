@@ -2,6 +2,12 @@
 
 namespace phalconer;
 
+/**
+ * @const APPLICATION_ENV Current application stage:
+ *        production, staging, development, testing
+ */
+defined('APPLICATION_ENV') or define('APPLICATION_ENV', 'development');
+
 require_once __DIR__ . '/helpers.php';
 
 use Phalcon\Config;
@@ -12,6 +18,7 @@ use Phalcon\Error\Handler as ErrorHandler;
 use Phalcon\Loader;
 use Phalcon\Mvc\Application as MvcApplication;
 use phalconer\provider\ServiceProviderFactory;
+use phalconer\i18n\AbstractTranslator;
 
 class Application
 {
@@ -26,6 +33,9 @@ class Application
      */
     private $di;
 
+    /**
+     * @param Config $config
+     */
     public function __construct(Config $config)
     {
         /* Init helper config */
@@ -52,10 +62,44 @@ class Application
             $this->initializeServices($services);
         }
         
-        ErrorHandler::register();
+        $error = config('error', false);
+        if ($error) {
+            ErrorHandler::register();
+        }
+        
         $this->app = new MvcApplication($this->di);
         $this->di->setShared('mvc-app', $this->app);
         $this->app->setDI($this->di);
+    }
+    
+    /**
+     * Initialize the Services.
+     *
+     * @param  string[] $services
+     * @return $this
+     */
+    protected function initializeServices(Config $services)
+    {
+        foreach ($services as $name => $configValue) {
+            if ($configValue instanceof \Closure) {
+                $this->di->setShared($name, $configValue);
+            } else {
+                if (is_string($configValue)) {
+                    $name = $configValue;
+                    $configValue = new Config([]);
+                }
+                
+                if (isset($configValue['provider'])) {
+                    $provider = new $configValue['provider']($name, $configValue, $this->di);
+                } else {
+                    $provider = ServiceProviderFactory::make($name, $configValue, $this->di);
+                }
+                
+                $provider->register();
+                $provider->boot();
+            }
+        }
+        return $this;
     }
     
     /**
@@ -92,32 +136,31 @@ class Application
     }
     
     /**
-     * Initialize the Services.
-     *
-     * @param  string[] $services
-     * @return $this
+     * @return AbstractTranslator 
      */
-    protected function initializeServices(Config $services)
+    public function getTranslator()
     {
-        foreach ($services as $name => $configValue) {
-            if ($configValue instanceof \Closure) {
-                $this->di->setShared($name, $configValue);
+        if ($this->di->has('translator')) {
+            $translator = $this->di->getShared('translator');
+        } else {
+            $class = config('i18n.class', false);
+            if ($class) {
+                $translator = new $class(config('i18n'));
             } else {
-                if (is_string($configValue)) {
-                    $name = $configValue;
-                    $configValue = new Config([]);
-                }
-                
-                if (isset($configValue['provider'])) {
-                    $provider = new $configValue['provider']($name, $configValue, $this->di);
-                } else {
-                    $provider = ServiceProviderFactory::make($name, $configValue, $this->di);
-                }
-                
-                $provider->register();
-                $provider->boot();
+                $translator = new i18n\NativeArrayTranslator();
             }
+            $this->di->setShared('translator', $translator);
         }
+        return $translator;
+    }
+    
+    /**
+     * @param AbstractTranslator $translator
+     * @return \phalconer\Application this
+     */
+    public function setTranslator($translator)
+    {
+        $this->di->setShared('translator', $translator);
         return $this;
     }
 }
