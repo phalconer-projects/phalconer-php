@@ -135,7 +135,7 @@ abstract class AbstractTranslator
         } else {
             $language = $this->getCorrectLanguageBy($wontedLanguage);
         }
-        return $this->setLanguage($language);
+        return $this->setLanguageToSession($language);
     }
     
     /**
@@ -143,9 +143,9 @@ abstract class AbstractTranslator
      */
     public function currentLanguage()
     {
-        $language = $this->getLanguage();
+        $language = $this->getLanguageFromSession();
         if ($language === NULL) {
-            return $this->setupLanguage()->getLanguage();
+            return $this->setupLanguage()->getLanguageFromSession();
         }
         return $language;
     }
@@ -153,7 +153,7 @@ abstract class AbstractTranslator
     /**
      * @return string|null
      */
-    public function getLanguage()
+    public function getLanguageFromSession()
     {
         if ($this->di->get('session')->has('language')) {
             return $this->di->get('session')->get('language');
@@ -167,7 +167,7 @@ abstract class AbstractTranslator
      * @param string $language
      * @return \phalconer\i18n\AbstractTranslator this
      */
-    public function setLanguage($language)
+    public function setLanguageToSession($language)
     {
         $this->di->get('session')->set('language', $language);
         return $this;

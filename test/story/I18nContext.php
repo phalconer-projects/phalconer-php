@@ -132,7 +132,7 @@ class I18nContext extends TestCase implements Context
      */
     public function iShouldHaveAsCurrentLanguage($setupLang)
     {
-        $this->assertEquals($setupLang, $this->translator->getLanguage());
+        $this->assertEquals($setupLang, $this->translator->getLanguageFromSession());
     }
 
     /**
@@ -165,7 +165,7 @@ class I18nContext extends TestCase implements Context
     public function iRequestTheBestLanguageAsCurrentLanguage()
     {
         $bestLanguage = $this->translator->getBestLanguage();
-        $this->translator->setLanguage($bestLanguage);
+        $this->translator->setLanguageToSession($bestLanguage);
     }
 
     /**
@@ -208,7 +208,7 @@ class I18nContext extends TestCase implements Context
      */
     public function iGetTranslateSentence($label)
     {
-        $this->assertTrue($this->translator->canTranslate($this->translator->getLanguage()));
+        $this->assertTrue($this->translator->canTranslate($this->translator->getLanguageFromSession()));
         $adapter = $this->translator->getTranslationAdapter();
         $this->assertTrue($adapter instanceof \Phalcon\Translate\Adapter);
         $this->text = $adapter->_($label);
