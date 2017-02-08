@@ -53,7 +53,7 @@ class Application
         /* Init Phalcon DI */
         $this->di = new FactoryDefault;
         Di::setDefault($this->di);
-        $this->di->setShared('web-app', $this);
+        $this->di->setShared('app', $this);
         $this->di->setShared('config', config());
                 
         /** @noinspection PhpIncludeInspection */
@@ -68,7 +68,7 @@ class Application
         }
         
         $this->app = new MvcApplication($this->di);
-        $this->di->setShared('mvc-app', $this->app);
+        $this->di->setShared('phalcon-app', $this->app);
         $this->app->setDI($this->di);
     }
     
@@ -126,6 +126,14 @@ class Application
     }
     
     /**
+     * @return DiInterface
+     */
+    function getDI()
+    {
+        return $this->di;
+    }
+
+    /**
      * Get the Application.
      *
      * @return \Phalcon\Application|\Phalcon\Mvc\Micro
@@ -145,9 +153,9 @@ class Application
         } else {
             $class = config('i18n.class', false);
             if ($class) {
-                $translator = new $class(config('i18n'));
+                $translator = new $class($this->di, config('i18n'));
             } else {
-                $translator = new i18n\NativeArrayTranslator();
+                $translator = new i18n\NativeArrayTranslator($this->di);
             }
             $this->di->setShared('translator', $translator);
         }

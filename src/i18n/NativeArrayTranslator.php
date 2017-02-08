@@ -3,6 +3,7 @@
 namespace phalconer\i18n;
 
 use Phalcon\Config;
+use Phalcon\DiInterface;
 use Phalcon\Translate\Adapter\NativeArray;
 
 class NativeArrayTranslator extends AbstractTranslator
@@ -18,11 +19,11 @@ class NativeArrayTranslator extends AbstractTranslator
     protected $messagesDir;
     
     /**
-     * @param Config $config
+     * {@inheritDoc}
      */
-    public function __construct(Config $config = NULL)
+    public function __construct(DiInterface $di, Config $config = NULL)
     {
-        parent::__construct($config);
+        parent::__construct($di, $config);
         if ($config !== NULL) {
             $this->setMessages($config->get('messages', []));
             $this->setMessagesDir($config->get('messagesDir', ''));
@@ -32,18 +33,29 @@ class NativeArrayTranslator extends AbstractTranslator
     /**
      * {@inheritDoc}
      */
-    public function makeTranslationAdapter($language = NULL)
+    public function makeTranslationAdapter($language)
     {
-        $lang = $this->getLanguage($language);
         if (empty($this->messages) && !empty($this->messagesDir)) {
-            $translationFile = $this->messagesDir . $lang . ".php";
+            $translationFile = $this->messagesDir . $language . ".php";
             if (is_file($translationFile)) {
-                $this->messages[$lang] = require $translationFile;
+                $this->messages[$language] = require $translationFile;
             }
         }
         return new NativeArray([
-            "content" => isset($this->messages[$lang]) ? $this->messages[$lang] : [],
+            "content" => isset($this->messages[$language]) ? $this->messages[$language] : [],
         ]);
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    public function add($language, $label, $translation)
+    {
+        $this->checkSupportedLanguage($language);
+        if (!isset($this->messages[$language])) {
+            $this->messages[$language] = [];
+        }
+        $this->messages[$language][$label] = $translation;
     }
     
     /**

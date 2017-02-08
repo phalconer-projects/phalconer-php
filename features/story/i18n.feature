@@ -76,7 +76,7 @@ Feature: Internationalization
       ];
       """
     And there list "<langs>" as supported languages
-    And I setup the "<default>" as default language
+    And the "<default>" as default language
     When I setup messages dir
     And I request the "<select>" as current language
     And I get translate "<label>" sentence
@@ -101,7 +101,7 @@ Feature: Internationalization
     Examples:
       | langs        | default | select | label  | text      |
       | [en]         | en      | en     | title  | Title     |
-      | [en]         | ru      | en     | body   | Body      |
+      | [en]         | en      | en     | body   | Body      |
       | [en]         | en      | en     | header | header    |
       | [en, ru]     | en      | en     | title  | Title     |
       | [en, ru]     | en      | ru     | title  | Заголовок |
@@ -110,3 +110,45 @@ Feature: Internationalization
       | [en, ru]     | en      | fr     | title  | Title     |
       | [en, ru]     | ru      | fr     | title  | Заголовок |
       | [en, ru, fr] | en      | fr     | title  | title     |
+
+Scenario Outline: Redirect to URI depending on language
+    Given there list "<langs>" as supported languages
+    And the "en" as default language
+    And this "test" as some service URI
+    When I request the "<select>" as current language
+    And I go to the "<request>" URI
+    Then I see current URI equals "<redirect>"
+
+    Examples:
+      | langs        | select | request  | redirect |
+      | [en]         | en     | /        | /en      |
+      | [en]         | en     | /en      | /en      |
+      | [en]         | en     | /test    | /en/test |
+      | [en]         | en     | /en/test | /en/test |
+      | [en, ru]     | en     | /        | /en      |
+      | [en, ru]     | ru     | /        | /ru      |
+      | [en, ru]     | en     | /ru      | /ru      |
+      | [en, ru]     | en     | /test    | /en/test |
+      | [en, ru]     | ru     | /test    | /ru/test |
+      | [en, ru]     | en     | /ru/test | /ru/test |
+      | [en, ru]     | en     | /en/test | /en/test |
+
+Scenario Outline: Translate content on language
+    Given the "<adapter>" as translation adapter
+    And there list "<langs>" as supported languages
+    And the translation of "hello" text to the "ru" language as "привет"
+    And the translation of "hello" text to the "fr" language as "salut"
+    And the "en" as default language
+    And this "hello" as service URI with translation message "hello"
+    When I request the "<select>" as current language
+    And I go to the "<request>" URI
+    Then I see "<text>"
+
+    Examples:
+      | adapter | langs        | select | request   | text   |
+      | array   | [en, ru, fr] | en     | /hello    | hello  |
+      | array   | [en, ru, fr] | ru     | /hello    | привет |
+      | array   | [en, ru, fr] | ru     | /en/hello | hello  |
+      | array   | [en, ru, fr] | fr     | /hello    | salut  |
+      | array   | [en, ru, fr] | fr     | /ru/hello | привет |
+      | array   | [en, ru, fr] | en     | /fr/hello | salut  |

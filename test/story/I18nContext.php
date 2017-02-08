@@ -7,9 +7,24 @@ use Behat\Behat\Context\Context;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
 use PHPUnit\Framework\TestCase;
-use phalconer\Application;
 use Exception;
+use Phalcon\Mvc\Controller;
+use phalconer\Application;
 use phalconer\i18n\AbstractTranslator;
+use phalconer\i18n\LanguageConfig;
+use phalconer\i18n\NativeArrayTranslator;
+
+class TestController extends Controller
+{
+    public $label;
+    
+    public function indexAction()
+    {
+        if (!empty($this->label)) {
+            return $this->getDI()->get('app')->getTranslator()->getTranslationAdapter()->_($this->label);
+        }
+    }
+}
 
 /**
  * Defines application features from the specific context.
@@ -28,11 +43,6 @@ class I18nContext extends TestCase implements Context
      * @var AbstractTranslator
      */
     private $translator;
-    
-    /**
-     * @var string
-     */
-    private $setupLang;
     
     /**
      * @var Exception
@@ -58,9 +68,25 @@ class I18nContext extends TestCase implements Context
      */
     public function __construct()
     {
-        $config = [];
+        $config = [
+            'services' => [
+                'session',
+                'url',
+                'router' => [
+                    'routes' => LanguageConfig::$routes,
+                ]
+            ]
+        ];
         $this->app = new Application(new \Phalcon\Config($config));
+        $this->app->getDI()->set(
+            'IndexController',
+            function () {
+                return new TestController();
+            }
+        );
+        $this->app->getApplication()->useImplicitView(false);
         $this->translator = $this->app->getTranslator();
+        $this->translator->registerRedirectDispatcherEvent();
     }
 
     /**
@@ -73,6 +99,14 @@ class I18nContext extends TestCase implements Context
         $this->assertEquals($langs, $this->translator->getSupportedLanguages());
     }
 
+    /**
+     * @Given the :defaultLang as default language
+     */
+    public function theAsDefaultLanguage($defaultLang)
+    {
+        $this->translator->setDefaultLanguage($defaultLang);
+    }
+    
     /**
      * @When I setup the :defaultLang as default language
      */
@@ -90,7 +124,7 @@ class I18nContext extends TestCase implements Context
      */
     public function iSelectTheAsCurrentLanguage($wontedLang)
     {
-        $this->setupLang = $this->translator->getLanguage($wontedLang);
+        $this->translator->setupLanguage($wontedLang);
     }
 
     /**
@@ -98,7 +132,7 @@ class I18nContext extends TestCase implements Context
      */
     public function iShouldHaveAsCurrentLanguage($setupLang)
     {
-        $this->assertEquals($setupLang, $this->setupLang);
+        $this->assertEquals($setupLang, $this->translator->getLanguage());
     }
 
     /**
@@ -131,7 +165,7 @@ class I18nContext extends TestCase implements Context
     public function iRequestTheBestLanguageAsCurrentLanguage()
     {
         $bestLanguage = $this->translator->getBestLanguage();
-        $this->setupLang = $this->translator->getLanguage($bestLanguage);
+        $this->translator->setLanguage($bestLanguage);
     }
 
     /**
@@ -163,7 +197,7 @@ class I18nContext extends TestCase implements Context
     /**
      * @When I setup messages with:
      */
-    public function iSetupMessagesArray(PyStringNode $stringNode)
+    public function iSetupMessagesWith(PyStringNode $stringNode)
     {
         $messages = json_decode($stringNode->getRaw(), true);
         $this->translator->setMessages($messages);
@@ -174,10 +208,10 @@ class I18nContext extends TestCase implements Context
      */
     public function iGetTranslateSentence($label)
     {
-        $this->assertTrue($this->translator->canTranslate($this->setupLang));
-        $translation = $this->translator->getTranslationAdapter($this->setupLang);
-        $this->assertTrue($translation instanceof \Phalcon\Translate\Adapter);
-        $this->text = $translation->_($label);
+        $this->assertTrue($this->translator->canTranslate($this->translator->getLanguage()));
+        $adapter = $this->translator->getTranslationAdapter();
+        $this->assertTrue($adapter instanceof \Phalcon\Translate\Adapter);
+        $this->text = $adapter->_($label);
     }
 
     /**
@@ -186,5 +220,95 @@ class I18nContext extends TestCase implements Context
     public function iShouldHaveTranslated($text)
     {
         $this->assertEquals($text, $this->text);
+    }
+
+    /**
+     * @Given this :uri as some service URI
+     */
+    public function thisAsSomeServiceUri($uri)
+    {
+        $this->app->getDI()->set(
+            ucfirst($uri) . 'Controller',
+            function () {
+                return new TestController();
+            }
+        );
+    }
+    
+    private function setupUri($uri)
+    {
+        $_SERVER['REQUEST_URI'] = $uri;
+        $_GET['_url'] = strlen($uri) > 1 ? $uri : '';
+    }
+    
+    /**
+     * @When I go to the :uri URI
+     */
+    public function iGoToTheUri($uri)
+    {
+        $this->setupUri($uri);
+        $this->app->run();
+    }
+
+    /**
+     * @Then I see current URI equals :uri
+     */
+    public function iSeeCurrentUriEquals($uri)
+    {
+        $response = $this->app->getDI()->get('response');
+        if ($response->getStatusCode() === '302 Found') {
+            $location = $response->getHeaders()->get('Location');
+            $this->iGoToTheUri($location);
+        }
+        $this->assertEquals(
+                rtrim($uri, '/'),
+                rtrim($this->app->getDI()->get('router')->getRewriteUri(), '/')
+        );
+    }
+
+    /**
+     * @Given the :adapter as translation adapter
+     */
+    public function theAsTranslationAdapter($adapter)
+    {
+        if ($adapter === 'array') {
+            $this->translator = new NativeArrayTranslator($this->app->getDI());
+            $this->app->setTranslator($this->translator);
+            $this->translator->registerRedirectDispatcherEvent();
+        } else {
+            throw new Exception("Unsupported adapter: $adapter");
+        }
+    }
+    
+    /**
+     * @Given the translation of :text text to the :lang language as :translation
+     */
+    public function theTranslationOfTextToTheLanguageAs($text, $lang, $translation)
+    {
+        $this->translator->add($lang, $text, $translation);
+    }
+    
+    /**
+     * @Given this :uri as service URI with translation message :text
+     */
+    public function thisAsServiceUriWithTranslationMessage($uri, $text)
+    {
+        $this->app->getDI()->set(
+            ucfirst($uri) . 'Controller',
+            function () use ($text) {
+                $controller = new TestController();
+                $controller->label = $text;
+                return $controller;
+            }
+        );
+    }
+    
+    /**
+     * @Then I see :text
+     */
+    public function iSee($text)
+    {
+        $response = $this->app->getDI()->get('response');
+        $this->assertEquals($text, $response->getContent());
     }
 }

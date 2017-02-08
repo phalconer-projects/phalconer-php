@@ -26,7 +26,6 @@ class RouterServiceProvider extends AbstractServiceProvider
                 $this->serviceName,
                 function() use($config) {
                     $router = new Router();
-                    
                     $router->removeExtraSlashes(true);
                     
                     if (!empty($config['routes']) && is_config($config['routes'])) {

@@ -3,10 +3,19 @@
 namespace phalconer\i18n;
 
 use Phalcon\Config;
+use Phalcon\DiInterface;
+use Phalcon\Events\Event;
+use Phalcon\Events\Manager as EventsManager;
+use Phalcon\Http\Response;
 use Phalcon\Translate\AdapterInterface;
 
 abstract class AbstractTranslator
 {
+    /**
+     * @var DiInterface 
+     */
+    protected $di;
+    
     /**
      * @var AdapterInterface
      */
@@ -23,14 +32,44 @@ abstract class AbstractTranslator
     protected $supportedLanguages = [];
     
     /**
+     * @param DiInterface $di
      * @param Config $config
      */
-    public function __construct(Config $config = NULL)
+    public function __construct(DiInterface $di, Config $config = NULL)
     {
+        $this->di = $di;
         if ($config !== NULL) {
             $this->defaultLanguage = $config->get('defaultLanguage', NULL);
             $this->supportedLanguages = $config->get('supportLanguages', []);
         }
+    }
+    
+    /**
+     * @param string $event
+     */
+    public function registerRedirectDispatcherEvent()
+    {
+        $dispatcher = $this->di->get('dispatcher');
+        if (!$dispatcher->getEventsManager()) {
+            $dispatcher->setEventsManager(new EventsManager());
+        }
+        $di = $this->di;
+        $dispatcher->getEventsManager()->attach(
+            "dispatch:beforeExecuteRoute",
+            function (Event $event, $dispatcher) use ($di)
+            {
+                $language = $dispatcher->getParam('language');
+                $currentLanguage = $this->currentLanguage();
+                if (!empty($language)) {
+                    $this->setupLanguage($language);
+                    $currentLanguage = $this->currentLanguage();
+                }
+                if ($language !== $currentLanguage) {
+                    $di->get('response')->redirect('/' . $currentLanguage . $di->get('router')->getRewriteUri());
+                }
+                return $dispatcher;
+            }
+        );
     }
     
     /**
@@ -45,15 +84,22 @@ abstract class AbstractTranslator
     /**
      * @param string $language
      */
-    public abstract function makeTranslationAdapter($language = NULL);
+    public abstract function makeTranslationAdapter($language);
     
     /**
      * @param string $language
+     * @param string $label
+     * @param string $translation
+     */
+    public abstract function add($language, $label, $translation);
+
+        /**
      * @return AdapterInterface
      */
-    public function getTranslationAdapter($language = NULL)
+    public function getTranslationAdapter()
     {
         if (!isset($this->translationAdapter)) {
+            $language = $this->currentLanguage();
             $this->translationAdapter = $this->makeTranslationAdapter($language);
         }
         return $this->translationAdapter;
@@ -68,14 +114,63 @@ abstract class AbstractTranslator
         $this->translationAdapter = $translationAdapter;
         return $this;
     }
-    
+       
     /**
      * @param string $wontedLanguage
      * @return string
      */
-    public function getLanguage($wontedLanguage)
+    public function getCorrectLanguageBy($wontedLanguage)
     {
         return in_array($wontedLanguage, $this->supportedLanguages) ? $wontedLanguage : $this->defaultLanguage;
+    }
+    
+    /**
+     * @param string $wontedLanguage
+     * @return \phalconer\i18n\AbstractTranslator this
+     */
+    public function setupLanguage($wontedLanguage = NULL)
+    {
+        if (empty($wontedLanguage)) {
+            $language = $this->getBestLanguage();
+        } else {
+            $language = $this->getCorrectLanguageBy($wontedLanguage);
+        }
+        return $this->setLanguage($language);
+    }
+    
+    /**
+     * @return string|null
+     */
+    public function currentLanguage()
+    {
+        $language = $this->getLanguage();
+        if ($language === NULL) {
+            return $this->setupLanguage()->getLanguage();
+        }
+        return $language;
+    }
+    
+    /**
+     * @return string|null
+     */
+    public function getLanguage()
+    {
+        if ($this->di->get('session')->has('language')) {
+            return $this->di->get('session')->get('language');
+        } else {
+            return NULL;
+        }
+    }
+    
+    /**
+     * 
+     * @param string $language
+     * @return \phalconer\i18n\AbstractTranslator this
+     */
+    public function setLanguage($language)
+    {
+        $this->di->get('session')->set('language', $language);
+        return $this;
     }
     
     /**
@@ -119,9 +214,7 @@ abstract class AbstractTranslator
      */
     public function setDefaultLanguage($defaultLanguage)
     {
-        if (!in_array($defaultLanguage, $this->supportedLanguages)) {
-            throw new \Exception("Unsupported language: $defaultLanguage");
-        }
+        $this->checkSupportedLanguage($defaultLanguage);
         $this->defaultLanguage = $defaultLanguage;
         return $this;
     }
@@ -142,5 +235,16 @@ abstract class AbstractTranslator
     {
         $this->supportedLanguages = $supportedLanguages;
         return $this;
+    }
+    
+    /**
+     * @param string $language
+     * @throws \Exception if language is unsupported
+     */
+    protected function checkSupportedLanguage($language)
+    {
+        if (!in_array($language, $this->supportedLanguages)) {
+            throw new \Exception("Unsupported language: $language");
+        }
     }
 }
