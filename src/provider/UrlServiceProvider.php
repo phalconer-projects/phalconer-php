@@ -3,7 +3,6 @@
 namespace phalconer\provider;
 
 use phalconer\provider\AbstractServiceProvider;
-use Phalcon\Mvc\Url;
 
 class UrlServiceProvider extends AbstractServiceProvider
 {
@@ -26,7 +25,8 @@ class UrlServiceProvider extends AbstractServiceProvider
             $this->di->setShared(
                 $this->serviceName,
                 function() use($config) {
-                    $url = new Url();
+                    $class = $config->get('class', '\Phalcon\Mvc\Url');
+                    $url = new $class();
                     $url->setStaticBaseUri($config->get('staticBaseUri', '/'));
                     $url->setBaseUri($config->get('baseUri', '/'));
                     return $url;

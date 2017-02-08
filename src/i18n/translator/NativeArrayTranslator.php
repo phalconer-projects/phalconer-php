@@ -1,6 +1,6 @@
 <?php
 
-namespace phalconer\i18n;
+namespace phalconer\i18n\translator;
 
 use Phalcon\Config;
 use Phalcon\DiInterface;
@@ -19,7 +19,7 @@ class NativeArrayTranslator extends AbstractTranslator
     protected $messagesDir;
     
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function __construct(DiInterface $di, Config $config = NULL)
     {
@@ -31,7 +31,7 @@ class NativeArrayTranslator extends AbstractTranslator
     }
     
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function makeTranslationAdapter($language)
     {
@@ -47,7 +47,7 @@ class NativeArrayTranslator extends AbstractTranslator
     }
     
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function add($language, $label, $translation)
     {
@@ -68,7 +68,7 @@ class NativeArrayTranslator extends AbstractTranslator
 
     /**
      * @param array $messages
-     * @return \phalconer\i18n\NativeArrayTranslator this
+     * @return \phalconer\i18n\translator\NativeArrayTranslator this
      */
     function setMessages($messages)
     {
@@ -86,7 +86,7 @@ class NativeArrayTranslator extends AbstractTranslator
     
     /**
      * @param string $messagesDir
-     * @return \phalconer\i18n\NativeArrayTranslator this
+     * @return \phalconer\i18n\translator\NativeArrayTranslator this
      */
     public function setMessagesDir($messagesDir = NULL)
     {

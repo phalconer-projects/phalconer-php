@@ -1,6 +1,6 @@
 <?php
 
-namespace phalconer\i18n;
+namespace phalconer\i18n\translator;
 
 use Phalcon\Config;
 use Phalcon\DiInterface;
@@ -107,7 +107,7 @@ abstract class AbstractTranslator
     
     /**
      * @param AdapterInterface $translationAdapter
-     * @return \phalconer\i18n\AbstractTranslator this
+     * @return \phalconer\i18n\translator\AbstractTranslator this
      */
     function setTranslationAdapter(AdapterInterface $translationAdapter)
     {
@@ -126,7 +126,7 @@ abstract class AbstractTranslator
     
     /**
      * @param string $wontedLanguage
-     * @return \phalconer\i18n\AbstractTranslator this
+     * @return \phalconer\i18n\translator\AbstractTranslator this
      */
     public function setupLanguage($wontedLanguage = NULL)
     {
@@ -135,7 +135,7 @@ abstract class AbstractTranslator
         } else {
             $language = $this->getCorrectLanguageBy($wontedLanguage);
         }
-        return $this->setLanguageToSession($language);
+        return $this->setLanguageToSessionAndDI($language);
     }
     
     /**
@@ -145,7 +145,7 @@ abstract class AbstractTranslator
     {
         $language = $this->getLanguageFromSession();
         if ($language === NULL) {
-            return $this->setupLanguage()->getLanguageFromSession();
+            $language = $this->setupLanguage()->getLanguageFromSession();
         }
         return $language;
     }
@@ -165,11 +165,14 @@ abstract class AbstractTranslator
     /**
      * 
      * @param string $language
-     * @return \phalconer\i18n\AbstractTranslator this
+     * @return \phalconer\i18n\translator\AbstractTranslator this
      */
-    public function setLanguageToSession($language)
+    public function setLanguageToSessionAndDI($language)
     {
-        $this->di->get('session')->set('language', $language);
+        if ($this->di->has('session')) {
+            $this->di->get('session')->set('language', $language);
+        }
+        $this->di->set('language', function() use($language) { return $language; });
         return $this;
     }
     
@@ -209,7 +212,7 @@ abstract class AbstractTranslator
     
     /**
      * @param string $defaultLanguage
-     * @return \phalconer\i18n\AbstractTranslator this
+     * @return \phalconer\i18n\translator\AbstractTranslator this
      * @throws \Exception
      */
     public function setDefaultLanguage($defaultLanguage)
@@ -229,7 +232,7 @@ abstract class AbstractTranslator
     
     /**
      * @param array $supportedLanguages
-     * @return \phalconer\i18n\AbstractTranslator this
+     * @return \phalconer\i18n\translator\AbstractTranslator this
      */
     public function setSupportedLanguages($supportedLanguages)
     {

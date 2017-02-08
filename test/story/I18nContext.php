@@ -10,9 +10,9 @@ use PHPUnit\Framework\TestCase;
 use Exception;
 use Phalcon\Mvc\Controller;
 use phalconer\Application;
-use phalconer\i18n\AbstractTranslator;
 use phalconer\i18n\LanguageConfig;
-use phalconer\i18n\NativeArrayTranslator;
+use phalconer\i18n\translator\AbstractTranslator;
+use phalconer\i18n\translator\NativeArrayTranslator;
 
 class TestController extends Controller
 {
@@ -71,9 +71,11 @@ class I18nContext extends TestCase implements Context
         $config = [
             'services' => [
                 'session',
-                'url',
+                'url' => [
+                    'class' => '\phalconer\i18n\Url'
+                ],
                 'router' => [
-                    'routes' => LanguageConfig::$routes,
+                    'routes' => LanguageConfig::$routes
                 ]
             ]
         ];
@@ -165,7 +167,7 @@ class I18nContext extends TestCase implements Context
     public function iRequestTheBestLanguageAsCurrentLanguage()
     {
         $bestLanguage = $this->translator->getBestLanguage();
-        $this->translator->setLanguageToSession($bestLanguage);
+        $this->translator->setLanguageToSessionAndDI($bestLanguage);
     }
 
     /**
@@ -304,11 +306,20 @@ class I18nContext extends TestCase implements Context
     }
     
     /**
-     * @Then I see :text
+     * @Then I see :text in response
      */
-    public function iSee($text)
+    public function iSeeInResponse($text)
     {
         $response = $this->app->getDI()->get('response');
         $this->assertEquals($text, $response->getContent());
+    }
+
+    /**
+     * @Then I should have convert URL from :sourceUrl to :resultUrl
+     */
+    public function iShouldHaveConvertUrlFromTo($sourceUrl, $resultUrl)
+    {
+        $url = $this->app->getDI()->get('url');
+        $this->assertEquals($resultUrl, $url->get($sourceUrl));
     }
 }

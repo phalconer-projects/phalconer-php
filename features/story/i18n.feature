@@ -9,6 +9,7 @@ Feature: Internationalization
   - Select language by user
   - Store selected language between user sessions
   - Get translation by selected language
+  - Convert URL with selected language
 
   Scenario: Setup default language
     Given there list "[en, ru]" as supported languages
@@ -142,7 +143,7 @@ Scenario Outline: Translate content on language
     And this "hello" as service URI with translation message "hello"
     When I request the "<select>" as current language
     And I go to the "<request>" URI
-    Then I see "<text>"
+    Then I see "<text>" in response
 
     Examples:
       | adapter | langs        | select | request   | text   |
@@ -152,3 +153,23 @@ Scenario Outline: Translate content on language
       | array   | [en, ru, fr] | fr     | /hello    | salut  |
       | array   | [en, ru, fr] | fr     | /ru/hello | привет |
       | array   | [en, ru, fr] | en     | /fr/hello | salut  |
+
+Scenario Outline: Convert URL depending on language
+    Given there list "<langs>" as supported languages
+    And the "en" as default language
+    When I request the "<select>" as current language
+    Then I should have convert URL from "<source>" to "<result>"
+
+    Examples:
+      | langs        | select | source   | result   |
+      | [en]         | en     | /        | /en      |
+      | [en]         | en     | /en      | /en      |
+      | [en]         | en     | /test    | /en/test |
+      | [en]         | en     | /en/test | /en/test |
+      | [en, ru]     | en     | /        | /en      |
+      | [en, ru]     | ru     | /        | /ru      |
+      | [en, ru]     | en     | /ru      | /ru      |
+      | [en, ru]     | en     | /test    | /en/test |
+      | [en, ru]     | ru     | /test    | /ru/test |
+      | [en, ru]     | en     | /ru/test | /ru/test |
+      | [en, ru]     | en     | /en/test | /en/test |

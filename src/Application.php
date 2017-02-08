@@ -18,7 +18,8 @@ use Phalcon\Error\Handler as ErrorHandler;
 use Phalcon\Loader;
 use Phalcon\Mvc\Application as MvcApplication;
 use phalconer\provider\ServiceProviderFactory;
-use phalconer\i18n\AbstractTranslator;
+use phalconer\i18n\translator\AbstractTranslator;
+use phalconer\i18n\translator\NativeArrayTranslator;
 
 class Application
 {
@@ -155,7 +156,7 @@ class Application
             if ($class) {
                 $translator = new $class($this->di, config('i18n'));
             } else {
-                $translator = new i18n\NativeArrayTranslator($this->di);
+                $translator = new NativeArrayTranslator($this->di);
             }
             $this->di->setShared('translator', $translator);
         }
