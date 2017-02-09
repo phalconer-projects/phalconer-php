@@ -11,8 +11,8 @@ use Exception;
 use Phalcon\Mvc\Controller;
 use phalconer\Application;
 use phalconer\i18n\LanguageConfig;
-use phalconer\i18n\translator\AbstractTranslator;
-use phalconer\i18n\translator\NativeArrayTranslator;
+use phalconer\i18n\translation\Translator;
+use phalconer\i18n\translation\source\NativeArraySource;
 
 class TestController extends Controller
 {
@@ -21,7 +21,7 @@ class TestController extends Controller
     public function indexAction()
     {
         if (!empty($this->label)) {
-            return $this->getDI()->get('app')->getTranslator()->getTranslationAdapter()->_($this->label);
+            return $this->getDI()->get('translator')->getAdapter()->_($this->label);
         }
     }
 }
@@ -40,7 +40,7 @@ class I18nContext extends TestCase implements Context
     private $app;
     
     /**
-     * @var AbstractTranslator
+     * @var Translator
      */
     private $translator;
     
@@ -76,6 +76,18 @@ class I18nContext extends TestCase implements Context
                 ],
                 'router' => [
                     'routes' => LanguageConfig::$routes
+                ]
+            ],
+            'i18n' => [
+                'translator' => [
+//                    'supportedLanguages' => ['en', 'ru'],
+//                    'defaultLanguage' => 'en',
+//                    'defaultSourceName' => 'app',
+                    'sources' => [
+                        'app' => [
+                            'class' => NativeArraySource::class
+                        ]
+                    ]
                 ]
             ]
         ];
@@ -193,7 +205,7 @@ class I18nContext extends TestCase implements Context
      */
     public function iSetupMessagesDir()
     {
-        $this->translator->setMessagesDir($this->dir);
+        $this->translator->getSource('app')->setMessagesDir($this->dir);
     }
     
     /**
@@ -202,7 +214,7 @@ class I18nContext extends TestCase implements Context
     public function iSetupMessagesWith(PyStringNode $stringNode)
     {
         $messages = json_decode($stringNode->getRaw(), true);
-        $this->translator->setMessages($messages);
+        $this->translator->getSource('app')->setMessages($messages);
     }
 
     /**
@@ -211,7 +223,7 @@ class I18nContext extends TestCase implements Context
     public function iGetTranslateSentence($label)
     {
         $this->assertTrue($this->translator->canTranslate($this->translator->getLanguageFromSession()));
-        $adapter = $this->translator->getTranslationAdapter();
+        $adapter = $this->translator->getAdapter();
         $this->assertTrue($adapter instanceof \Phalcon\Translate\Adapter);
         $this->text = $adapter->_($label);
     }
@@ -274,12 +286,17 @@ class I18nContext extends TestCase implements Context
     public function theAsTranslationAdapter($adapter)
     {
         if ($adapter === 'array') {
-            $this->translator = new NativeArrayTranslator($this->app->getDI());
-            $this->app->setTranslator($this->translator);
-            $this->translator->registerRedirectDispatcherEvent();
-        } else {
+            $class = NativeArraySource::class;
+        }
+        if (!isset($class)) {
             throw new Exception("Unsupported adapter: $adapter");
         }
+        
+        $this->translator = new Translator($this->app->getDI());
+        $this->translator->initSourcesList(['app' => ['class' => $class]]);
+        $this->translator->setDefaultSourceName('app');
+        $this->app->setTranslator($this->translator);
+        $this->translator->registerRedirectDispatcherEvent();
     }
     
     /**

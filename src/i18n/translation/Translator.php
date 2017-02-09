@@ -1,25 +1,21 @@
 <?php
 
-namespace phalconer\i18n\translator;
+namespace phalconer\i18n\translation;
 
 use Phalcon\Config;
 use Phalcon\DiInterface;
 use Phalcon\Events\Event;
 use Phalcon\Events\Manager as EventsManager;
-use Phalcon\Http\Response;
 use Phalcon\Translate\AdapterInterface;
+use phalconer\i18n\translation\source\AbstractSource;
+use phalconer\i18n\translation\source\NativeArraySource;
 
-abstract class AbstractTranslator
+class Translator extends AbstractSource
 {
     /**
      * @var DiInterface 
      */
     protected $di;
-    
-    /**
-     * @var AdapterInterface
-     */
-    protected $translationAdapter;
     
     /**
      * @var string
@@ -32,6 +28,16 @@ abstract class AbstractTranslator
     protected $supportedLanguages = [];
     
     /**
+     * @var string
+     */
+    protected $defaultSourceName;
+    
+    /**
+     * @var array
+     */
+    protected $sources = [];
+    
+    /**
      * @param DiInterface $di
      * @param Config $config
      */
@@ -40,10 +46,63 @@ abstract class AbstractTranslator
         $this->di = $di;
         if ($config !== NULL) {
             $this->defaultLanguage = $config->get('defaultLanguage', NULL);
-            $this->supportedLanguages = $config->get('supportLanguages', []);
+            $supportedLanguages = $config->get('supportedLanguages', []);
+            if (!empty($supportedLanguages)) {
+                $this->supportedLanguages = $supportedLanguages->toArray();
+            }
+            $sources = $config->get('sources', []);
+            if (!empty($sources)) {
+                $this->initSourcesList($sources->toArray());
+            }
+            $this->defaultSourceName = $config->get('defaultSourceName', $this->getFirstSourceName());
         }
     }
     
+    /**
+     * @param array $sources
+     */
+    public function initSourcesList(array $sources)
+    {
+        foreach ($sources as $name => $params) {
+            $class = isset($params['class']) ? $params['class'] : NativeArraySource::class;
+            $this->sources[$name] = new $class($params);
+        }
+    }
+    
+    /**
+     * @return string|null
+     */
+    protected function getFirstSourceName()
+    {
+        return empty($this->sources) ? NULL : array_keys($this->sources)[0];
+    }
+
+    /**
+     * @return AbstractSource|null
+     */
+    public function getDefaultSource()
+    {
+        if ($this->defaultSourceName !== NULL) {
+            return $this->sources[$this->defaultSourceName];
+        }
+        return NULL;
+    }
+    
+    /**
+     * @param string $name
+     * @return AbstractSource|null
+     */
+    public function getSource($name = NULL)
+    {
+        if ($name === NULL) {
+            return $this->getDefaultSource();
+        }
+        if (isset($this->sources[$name])) {
+            return $this->sources[$name];
+        }
+        return NULL;
+    }
+
     /**
      * @param string $event
      */
@@ -80,41 +139,45 @@ abstract class AbstractTranslator
     {
         return !empty($language) && in_array($language, $this->supportedLanguages);
     }
-    
-    /**
-     * @param string $language
-     */
-    public abstract function makeTranslationAdapter($language);
-    
-    /**
-     * @param string $language
-     * @param string $label
-     * @param string $translation
-     */
-    public abstract function add($language, $label, $translation);
 
-        /**
-     * @return AdapterInterface
+    /**
+     * @param string $sourceName
+     * @return AdapterInterface|null
      */
-    public function getTranslationAdapter()
+    public function getAdapter($sourceName = NULL)
     {
-        if (!isset($this->translationAdapter)) {
+        $source = $this->getSource($sourceName);
+        if (!empty($source)) {
             $language = $this->currentLanguage();
-            $this->translationAdapter = $this->makeTranslationAdapter($language);
+            return $source->makeAdapter($language);
         }
-        return $this->translationAdapter;
+        return NULL;
     }
     
     /**
-     * @param AdapterInterface $translationAdapter
-     * @return \phalconer\i18n\translator\AbstractTranslator this
+     * {@inheritdoc}
      */
-    function setTranslationAdapter(AdapterInterface $translationAdapter)
+    public function makeAdapter($language)
     {
-        $this->translationAdapter = $translationAdapter;
-        return $this;
+        $source = $this->getDefaultSource();
+        if (!empty($source)) {
+            return $source->makeAdapter($language);
+        }
+        return NULL;
     }
-       
+    
+    /**
+     * {@inheritdoc}
+     */
+    public function add($language, $label, $translation)
+    {
+        $this->checkSupportedLanguage($language);
+        $source = $this->getDefaultSource();
+        if (!empty($source)) {
+           $source->add($language, $label, $translation);
+        }
+    }
+        
     /**
      * @param string $wontedLanguage
      * @return string
@@ -126,7 +189,7 @@ abstract class AbstractTranslator
     
     /**
      * @param string $wontedLanguage
-     * @return \phalconer\i18n\translator\AbstractTranslator this
+     * @return Translator this
      */
     public function setupLanguage($wontedLanguage = NULL)
     {
@@ -165,7 +228,7 @@ abstract class AbstractTranslator
     /**
      * 
      * @param string $language
-     * @return \phalconer\i18n\translator\AbstractTranslator this
+     * @return Translator this
      */
     public function setLanguageToSessionAndDI($language)
     {
@@ -212,7 +275,7 @@ abstract class AbstractTranslator
     
     /**
      * @param string $defaultLanguage
-     * @return \phalconer\i18n\translator\AbstractTranslator this
+     * @return Translator this
      * @throws \Exception
      */
     public function setDefaultLanguage($defaultLanguage)
@@ -232,7 +295,7 @@ abstract class AbstractTranslator
     
     /**
      * @param array $supportedLanguages
-     * @return \phalconer\i18n\translator\AbstractTranslator this
+     * @return Translator this
      */
     public function setSupportedLanguages($supportedLanguages)
     {
@@ -249,5 +312,23 @@ abstract class AbstractTranslator
         if (!in_array($language, $this->supportedLanguages)) {
             throw new \Exception("Unsupported language: $language");
         }
+    }
+    
+    /**
+     * @return string
+     */
+    function getDefaultSourceName()
+    {
+        return $this->defaultSourceName;
+    }
+
+    /**
+     * @param string $defaultSourceName
+     * @return Translator this
+     */
+    function setDefaultSourceName($defaultSourceName)
+    {
+        $this->defaultSourceName = $defaultSourceName;
+        return $this;
     }
 }

@@ -1,12 +1,10 @@
 <?php
 
-namespace phalconer\i18n\translator;
+namespace phalconer\i18n\translation\source;
 
-use Phalcon\Config;
-use Phalcon\DiInterface;
 use Phalcon\Translate\Adapter\NativeArray;
 
-class NativeArrayTranslator extends AbstractTranslator
+class NativeArraySource extends AbstractSource
 {
     /**
      * @var array
@@ -21,28 +19,28 @@ class NativeArrayTranslator extends AbstractTranslator
     /**
      * {@inheritdoc}
      */
-    public function __construct(DiInterface $di, Config $config = NULL)
+    public function __construct(array $params = NULL)
     {
-        parent::__construct($di, $config);
-        if ($config !== NULL) {
-            $this->setMessages($config->get('messages', []));
-            $this->setMessagesDir($config->get('messagesDir', ''));
+        parent::__construct($params);
+        if ($params !== NULL) {
+            $this->setMessages(isset($params['messages']) ? $params['messages'] : []);
+            $this->setMessagesDir(isset($params['messagesDir']) ? $params['messagesDir'] : '');
         }
     }
     
     /**
      * {@inheritdoc}
      */
-    public function makeTranslationAdapter($language)
+    public function makeAdapter($language)
     {
         if (empty($this->messages) && !empty($this->messagesDir)) {
-            $translationFile = $this->messagesDir . $language . ".php";
+            $translationFile = $this->messagesDir . $language . '.php';
             if (is_file($translationFile)) {
                 $this->messages[$language] = require $translationFile;
             }
         }
         return new NativeArray([
-            "content" => isset($this->messages[$language]) ? $this->messages[$language] : [],
+            'content' => isset($this->messages[$language]) ? $this->messages[$language] : [],
         ]);
     }
     
@@ -51,7 +49,6 @@ class NativeArrayTranslator extends AbstractTranslator
      */
     public function add($language, $label, $translation)
     {
-        $this->checkSupportedLanguage($language);
         if (!isset($this->messages[$language])) {
             $this->messages[$language] = [];
         }
@@ -68,7 +65,7 @@ class NativeArrayTranslator extends AbstractTranslator
 
     /**
      * @param array $messages
-     * @return \phalconer\i18n\translator\NativeArrayTranslator this
+     * @return NativeArraySource this
      */
     function setMessages($messages)
     {
@@ -86,7 +83,7 @@ class NativeArrayTranslator extends AbstractTranslator
     
     /**
      * @param string $messagesDir
-     * @return \phalconer\i18n\translator\NativeArrayTranslator this
+     * @return NativeArraySource this
      */
     public function setMessagesDir($messagesDir = NULL)
     {

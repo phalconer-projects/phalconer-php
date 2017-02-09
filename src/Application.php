@@ -18,8 +18,7 @@ use Phalcon\Error\Handler as ErrorHandler;
 use Phalcon\Loader;
 use Phalcon\Mvc\Application as MvcApplication;
 use phalconer\provider\ServiceProviderFactory;
-use phalconer\i18n\translator\AbstractTranslator;
-use phalconer\i18n\translator\NativeArrayTranslator;
+use phalconer\i18n\translation\Translator;
 
 class Application
 {
@@ -145,26 +144,26 @@ class Application
     }
     
     /**
-     * @return AbstractTranslator 
+     * @return Translator 
      */
     public function getTranslator()
     {
         if ($this->di->has('translator')) {
-            $translator = $this->di->getShared('translator');
-        } else {
-            $class = config('i18n.class', false);
-            if ($class) {
-                $translator = new $class($this->di, config('i18n'));
-            } else {
-                $translator = new NativeArrayTranslator($this->di);
-            }
-            $this->di->setShared('translator', $translator);
+            return $this->di->getShared('translator');
         }
-        return $translator;
+        
+        $config = config('i18n.translator', false);
+        if ($config) {
+            $translator = new Translator($this->di, $config);
+            $this->di->setShared('translator', $translator);
+            return $translator;
+        }
+        
+        return NULL;
     }
     
     /**
-     * @param AbstractTranslator $translator
+     * @param Translator $translator
      * @return \phalconer\Application this
      */
     public function setTranslator($translator)
