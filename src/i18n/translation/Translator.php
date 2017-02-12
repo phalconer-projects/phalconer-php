@@ -198,7 +198,11 @@ class Translator extends AbstractSource
         } else {
             $language = $this->getCorrectLanguageBy($wontedLanguage);
         }
-        return $this->setLanguageToSessionAndDI($language);
+        $this->setLanguageToSession($language);
+        $this->setLanguageToDI($language);
+        $this->setLanguageToCoockies($language);
+        
+        return $this;
     }
     
     /**
@@ -208,7 +212,10 @@ class Translator extends AbstractSource
     {
         $language = $this->getLanguageFromSession();
         if ($language === NULL) {
-            $language = $this->setupLanguage()->getLanguageFromSession();
+            $language = $this->getLanguageFromCoockies();
+            if ($language === NULL) {
+                $language = $this->setupLanguage()->getLanguageFromSession();
+            }
         }
         return $language;
     }
@@ -230,11 +237,46 @@ class Translator extends AbstractSource
      * @param string $language
      * @return Translator this
      */
-    public function setLanguageToSessionAndDI($language)
+    public function setLanguageToSession($language)
     {
         if ($this->di->has('session')) {
             $this->di->get('session')->set('language', $language);
         }
+        return $this;
+    }
+    
+    /**
+     * @return string|null
+     */
+    public function getLanguageFromCoockies()
+    {
+        if ($this->di->get('cookies')->has('language')) {
+            return $this->di->get('cookies')->get('language')->getValue();
+        } else {
+            return NULL;
+        }
+    }
+    
+    /**
+     * 
+     * @param string $language
+     * @return Translator this
+     */
+    public function setLanguageToCoockies($language)
+    {
+        if ($this->di->has('cookies')) {
+            $this->di->get('cookies')->set('language', $language, time() + 365 * 86400);
+        }
+        return $this;
+    }
+    
+    /**
+     * 
+     * @param string $language
+     * @return Translator this
+     */
+    public function setLanguageToDI($language)
+    {
         $this->di->set('language', function() use($language) { return $language; });
         return $this;
     }

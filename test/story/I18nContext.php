@@ -75,6 +75,9 @@ class I18nContext extends TestCase implements Context
         $config = [
             'services' => [
                 'session',
+                'crypt' => [
+                    'key' => 'testKey'
+                ],
                 'url' => [
                     'class' => '\phalconer\i18n\Url'
                 ],
@@ -183,7 +186,7 @@ class I18nContext extends TestCase implements Context
     public function iRequestTheBestLanguageAsCurrentLanguage()
     {
         $bestLanguage = $this->translator->getBestLanguage();
-        $this->translator->setLanguageToSessionAndDI($bestLanguage);
+        $this->translator->setupLanguage($bestLanguage);
     }
 
     /**

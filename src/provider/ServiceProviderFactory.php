@@ -16,6 +16,7 @@ class ServiceProviderFactory
         'db' => DatabaseServiceProvider::class,
         'modelsMetadata' => ModelsMetadataServiceProvider::class,
         'flash' => FlashServiceProvider::class,
+        'crypt' => CryptServiceProvider::class
     ];
     
     public static function make($serviceName, Config $config, DiInterface $di)
