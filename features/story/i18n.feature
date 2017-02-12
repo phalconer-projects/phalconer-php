@@ -135,7 +135,7 @@ Scenario Outline: Redirect to URI depending on language
       | [en, ru]     | en     | /en/test | /en/test |
 
 Scenario Outline: Translate content on language
-    Given the "<adapter>" as translation adapter
+    Given the "<source>" as translation source
     And there list "<langs>" as supported languages
     And the translation of "hello" text to the "ru" language as "привет"
     And the translation of "hello" text to the "fr" language as "salut"
@@ -146,13 +146,31 @@ Scenario Outline: Translate content on language
     Then I see "<text>" in response
 
     Examples:
-      | adapter | langs        | select | request   | text   |
-      | array   | [en, ru, fr] | en     | /hello    | hello  |
-      | array   | [en, ru, fr] | ru     | /hello    | привет |
-      | array   | [en, ru, fr] | ru     | /en/hello | hello  |
-      | array   | [en, ru, fr] | fr     | /hello    | salut  |
-      | array   | [en, ru, fr] | fr     | /ru/hello | привет |
-      | array   | [en, ru, fr] | en     | /fr/hello | salut  |
+      | source     | langs        | select | request   | text   |
+      | array      | [en, ru, fr] | en     | /hello    | hello  |
+      | array      | [en, ru, fr] | ru     | /hello    | привет |
+      | array      | [en, ru, fr] | ru     | /en/hello | hello  |
+      | array      | [en, ru, fr] | fr     | /hello    | salut  |
+      | array      | [en, ru, fr] | fr     | /ru/hello | привет |
+      | array      | [en, ru, fr] | en     | /fr/hello | salut  |
+      | database   | [en, ru, fr] | en     | /hello    | hello  |
+      | database   | [en, ru, fr] | ru     | /hello    | привет |
+      | database   | [en, ru, fr] | ru     | /en/hello | hello  |
+      | database   | [en, ru, fr] | fr     | /hello    | salut  |
+      | database   | [en, ru, fr] | fr     | /ru/hello | привет |
+      | database   | [en, ru, fr] | en     | /fr/hello | salut  |
+      | apcu_array | [en, ru, fr] | en     | /hello    | hello  |
+      | apcu_array | [en, ru, fr] | ru     | /hello    | привет |
+      | apcu_array | [en, ru, fr] | ru     | /en/hello | hello  |
+      | apcu_array | [en, ru, fr] | fr     | /hello    | salut  |
+      | apcu_array | [en, ru, fr] | fr     | /ru/hello | привет |
+      | apcu_array | [en, ru, fr] | en     | /fr/hello | salut  |
+      | apcu_db    | [en, ru, fr] | en     | /hello    | hello  |
+      | apcu_db    | [en, ru, fr] | ru     | /hello    | привет |
+      | apcu_db    | [en, ru, fr] | ru     | /en/hello | hello  |
+      | apcu_db    | [en, ru, fr] | fr     | /hello    | salut  |
+      | apcu_db    | [en, ru, fr] | fr     | /ru/hello | привет |
+      | apcu_db    | [en, ru, fr] | en     | /fr/hello | salut  |
 
 Scenario Outline: Convert URL depending on language
     Given there list "<langs>" as supported languages
@@ -173,3 +191,26 @@ Scenario Outline: Convert URL depending on language
       | [en, ru]     | ru     | /test    | /ru/test |
       | [en, ru]     | en     | /ru/test | /ru/test |
       | [en, ru]     | en     | /en/test | /en/test |
+
+Scenario Outline: APCu caching
+    Given the "<source>" as translation source
+    And there list "[en, ru]" as supported languages
+    And the translation of "hello" text to the "ru" language as "привет"
+    And the "en" as default language
+    And I request the "ru" as current language
+    When I get translate "hello" sentence
+    Then I should have translated "привет"
+    When I change translation of "hello" text on "ru" language to "здравствуйте" in APCu source
+    And I get translate "hello" sentence
+    Then I should have translated "привет"
+    When I clean APCu wrapper
+    And I get translate "hello" sentence
+    Then I should have translated "здравствуйте"
+    When I change translation of "hello" text on "ru" language to "привет"
+    And I get translate "hello" sentence
+    Then I should have translated "привет"
+
+    Examples:
+      | source     |
+      | apcu_array |
+      | apcu_db    |

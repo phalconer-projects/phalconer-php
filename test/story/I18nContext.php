@@ -9,10 +9,14 @@ use Behat\Gherkin\Node\TableNode;
 use PHPUnit\Framework\TestCase;
 use Exception;
 use Phalcon\Mvc\Controller;
+use Phalcon\Db\Adapter\Pdo\Mysql;
 use phalconer\Application;
 use phalconer\i18n\LanguageConfig;
 use phalconer\i18n\translation\Translator;
+use phalconer\i18n\translation\source\AbstractSource;
 use phalconer\i18n\translation\source\NativeArraySource;
+use phalconer\i18n\translation\source\DatabaseSource;
+use phalconer\i18n\translation\source\ApcuSourceWrapper;
 
 class TestController extends Controller
 {
@@ -281,19 +285,58 @@ class I18nContext extends TestCase implements Context
     }
 
     /**
-     * @Given the :adapter as translation adapter
+     * @Given the :source as translation source
      */
-    public function theAsTranslationAdapter($adapter)
+    public function theAsTranslationAdapter($source)
     {
-        if ($adapter === 'array') {
-            $class = NativeArraySource::class;
+        if ($source === 'array') {
+            $options = ['class' => NativeArraySource::class];
         }
-        if (!isset($class)) {
-            throw new Exception("Unsupported adapter: $adapter");
+        if ($source === 'database') {
+            $options = [
+                'class' => DatabaseSource::class,
+                'db' => new Mysql([
+                    'host'     => 'localhost',
+                    'dbname'   => 'phalconer_test',
+                    'username' => 'phalconer_test',
+                    'password' => ''
+                ])
+            ];
+            $options['db']->delete('translations');
+        }
+        if ($source === 'apcu_array') {
+            $options = [
+                'class' => ApcuSourceWrapper::class,
+                'ttl' => 1,
+                'source' => [
+                    'class' => NativeArraySource::class,
+                ]
+            ];
+            apcu_clear_cache();
+        }
+        if ($source === 'apcu_db') {
+            $options = [
+                'class' => ApcuSourceWrapper::class,
+                'ttl' => 1,
+                'source' => [
+                    'class' => DatabaseSource::class,
+                    'db' => new Mysql([
+                        'host'     => 'localhost',
+                        'dbname'   => 'phalconer_test',
+                        'username' => 'phalconer_test',
+                        'password' => ''
+                    ])
+                ]
+            ];
+            $options['source']['db']->delete('translations');
+            apcu_clear_cache();
+        }
+        if (!isset($options)) {
+            throw new Exception("Unsupported source: $source");
         }
         
         $this->translator = new Translator($this->app->getDI());
-        $this->translator->initSourcesList(['app' => ['class' => $class]]);
+        $this->translator->initSourcesList(['app' => $options]);
         $this->translator->setDefaultSourceName('app');
         $this->app->setTranslator($this->translator);
         $this->translator->registerRedirectDispatcherEvent();
@@ -338,5 +381,42 @@ class I18nContext extends TestCase implements Context
     {
         $url = $this->app->getDI()->get('url');
         $this->assertEquals($resultUrl, $url->get($sourceUrl));
+    }
+
+    /**
+     * @When I change translation of :label text on :language language to :translation in APCu source
+     */
+    public function iChangeTranslationOfTextOnLanguageToInApcuSource($label, $language, $translation)
+    {
+        /** @var ApcuSourceWrapper $apcuWrapper */
+        $apcuWrapper = $this->translator->getSource();
+        $this->assertTrue($apcuWrapper instanceof ApcuSourceWrapper, "Source is not ApcuSourceWrapper instance");
+        
+        /** @var AbstractSource $source */
+        $source = $apcuWrapper->getSource();
+        $this->assertTrue($source instanceof AbstractSource, "APCu source is not AbstractSource instance");
+        $this->assertTrue($source->add($language, $label, $translation));
+    }
+
+    /**
+     * @When I clean APCu wrapper
+     */
+    public function iCleanAPCuWrapper()
+    {
+        /** @var ApcuSourceWrapper $apcuWrapper */
+        $apcuWrapper = $this->translator->getSource();
+        $this->assertTrue($apcuWrapper instanceof ApcuSourceWrapper, "Source is not ApcuSourceWrapper instance");
+        $apcuWrapper->clean();
+    }
+
+    /**
+     * @When I change translation of :label text on :language language to :translation
+     */
+    public function iChangeTranslationOfTextOnLanguageTo($label, $language, $translation)
+    {
+        /** @var AbstractSource $source */
+        $source = $this->translator->getSource();
+        $this->assertTrue($source instanceof AbstractSource, "APCu source is not AbstractSource instance");
+        $this->assertTrue($source->add($language, $label, $translation));
     }
 }

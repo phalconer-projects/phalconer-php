@@ -23,6 +23,7 @@ abstract class AbstractSource
      * @param string $language
      * @param string $label
      * @param string $translation
+     * @return bool
      */
     public abstract function add($language, $label, $translation);
 }

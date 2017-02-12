@@ -53,6 +53,7 @@ class NativeArraySource extends AbstractSource
             $this->messages[$language] = [];
         }
         $this->messages[$language][$label] = $translation;
+        return true;
     }
     
     /**
