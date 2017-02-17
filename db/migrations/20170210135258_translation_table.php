@@ -2,7 +2,7 @@
 
 use Phinx\Migration\AbstractMigration;
 
-class TranslationsTable extends AbstractMigration
+class TranslationTable extends AbstractMigration
 {
     /**
      * Change Method.
@@ -27,7 +27,7 @@ class TranslationsTable extends AbstractMigration
      */
     public function change()
     {
-        $this->table('translations')
+        $this->table('translation')
             ->addColumn('language', 'string', ['limit' => 5, 'collation' => 'utf8_bin'])
             ->addColumn('key_name', 'string', ['limit' => 48, 'collation' => 'utf8_bin'])
             ->addColumn('value', 'text', ['collation' => 'utf8_bin'])

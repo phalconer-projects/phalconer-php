@@ -83,6 +83,13 @@ class I18nContext extends TestCase implements Context
                 ],
                 'router' => [
                     'routes' => LanguageConfig::$routes
+                ],
+                'db' => [
+                    'driver'   => 'mysql',
+                    'host'     => 'localhost',
+                    'dbname'   => 'phalconer_test',
+                    'username' => 'phalconer_test',
+                    'password' => ''
                 ]
             ],
             'i18n' => [
@@ -296,16 +303,8 @@ class I18nContext extends TestCase implements Context
             $options = ['class' => NativeArraySource::class];
         }
         if ($source === 'database') {
-            $options = [
-                'class' => DatabaseSource::class,
-                'db' => new Mysql([
-                    'host'     => 'localhost',
-                    'dbname'   => 'phalconer_test',
-                    'username' => 'phalconer_test',
-                    'password' => ''
-                ])
-            ];
-            $options['db']->delete('translations');
+            $options = ['class' => DatabaseSource::class];
+            $this->app->getDI()->get('db')->delete('translation');
         }
         if ($source === 'apcu_array') {
             $options = [
@@ -322,16 +321,10 @@ class I18nContext extends TestCase implements Context
                 'class' => ApcuSourceWrapper::class,
                 'ttl' => 1,
                 'source' => [
-                    'class' => DatabaseSource::class,
-                    'db' => new Mysql([
-                        'host'     => 'localhost',
-                        'dbname'   => 'phalconer_test',
-                        'username' => 'phalconer_test',
-                        'password' => ''
-                    ])
+                    'class' => DatabaseSource::class
                 ]
             ];
-            $options['source']['db']->delete('translations');
+            $this->app->getDI()->get('db')->delete('translation');
             apcu_clear_cache();
         }
         if (!isset($options)) {

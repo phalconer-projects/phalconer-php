@@ -27,7 +27,7 @@ class DatabaseServiceProvider extends AbstractServiceProvider
                     $adapter = ucfirst($config['driver']);
                     $class = 'Phalcon\Db\Adapter\Pdo\\' . $adapter;
                     
-                    $params = $config;
+                    $params = $config->toArray();
                     unset($params['driver']);
                     if ($adapter == 'Postgresql') {
                         unset($params['charset']);

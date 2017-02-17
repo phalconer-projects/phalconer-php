@@ -31,8 +31,11 @@ class ApcuSourceWrapper extends AbstractSource
         parent::__construct($params);
         if ($params !== NULL) {
             $class = isset($params['source']['class']) ? $params['source']['class'] : NativeArraySource::class;
+            if (isset($params['di'])) {
+                $params['source']['di'] = $params['di'];
+            }
             $this->source = new $class(isset($params['source']) ? $params['source'] : NULL);
-            $this->translationsScope = isset($params['translationsScope']) ? $params['translationsScope'] : 'translations';
+            $this->translationsScope = isset($params['translationsScope']) ? $params['translationsScope'] : 'translation';
             $this->ttl = isset($params['ttl']) ? $params['ttl'] : 10 * 60;
         }
     }

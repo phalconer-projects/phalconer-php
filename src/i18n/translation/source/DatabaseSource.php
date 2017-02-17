@@ -31,8 +31,12 @@ class DatabaseSource extends AbstractSource
     {
         parent::__construct($params);
         if ($params !== NULL) {
-            $this->setDb(isset($params['db']) ? $params['db'] : NULL);
-            $this->setTranslationsTable(isset($params['translationsTable']) ? $params['translationsTable'] : 'translations');
+            if (isset($params['db'])) {
+                $this->setDb($params['db']);
+            } else if (!empty($params['di']) && $params['di']->has('db')) {
+                $this->setDb($params['di']->get('db'));
+            }
+            $this->setTranslationsTable(isset($params['translationsTable']) ? $params['translationsTable'] : 'translation');
             $this->setUseIcuMessageFormatter(isset($params['useIcuMessageFormatter']) ? $params['useIcuMessageFormatter'] : true);
         }
     }

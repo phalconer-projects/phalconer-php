@@ -65,6 +65,9 @@ class Translator extends AbstractSource
     {
         foreach ($sources as $name => $params) {
             $class = isset($params['class']) ? $params['class'] : NativeArraySource::class;
+            if (!isset($params['di']) && !empty($this->di)) {
+                $params['di'] = $this->di;
+            }
             $this->sources[$name] = new $class($params);
         }
     }
