@@ -7,6 +7,7 @@ default:
                 - %paths.base%/features/story
             contexts:
                 - story\I18nContext
+                - story\UserContext
         spec:
             paths:
                 - %paths.base%/features/spec
