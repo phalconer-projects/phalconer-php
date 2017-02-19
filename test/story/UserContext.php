@@ -10,8 +10,10 @@ use PHPUnit\Framework\TestCase;
 use Exception;
 use Phalcon\Mvc\Controller;
 use Phalcon\Db\Adapter\Pdo\Mysql;
+use Phalcon\DiInterface;
 use phalconer\Application;
 use phalconer\user\controller\UserController;
+use phalconer\user\model\User;
 
 /**
  * Defines application features from the specific context.
@@ -27,9 +29,9 @@ class UserContext extends TestCase implements Context
     private $app;
     
     /**
-     * @var Exception
+     * @var DiInterface
      */
-    private $exception;
+    private $di;
 
     /**
      * Initializes context.
@@ -46,6 +48,7 @@ class UserContext extends TestCase implements Context
                 'crypt' => [
                     'key' => 'testKey'
                 ],
+                'security',
                 'url',
                 'router',
                 'db' => [
@@ -65,6 +68,7 @@ class UserContext extends TestCase implements Context
             }
         );
         $this->app->getApplication()->useImplicitView(false);
+        $this->di = $this->app->getDI();
     }
 
     /**
@@ -72,13 +76,21 @@ class UserContext extends TestCase implements Context
      */
     public function thisUserWithNameAndPassword($name, $pass)
     {
-        throw new PendingException();
+        $count = User::count("name = '$name'");
+        if ($count > 0) {
+            $user = User::findFirst("name = '$name'");
+        } else {
+            $user = new User();
+            $user->name = $name;
+        }
+        $user->password_hash = $this->di->get('security')->hash($pass);
+        $this->assertTrue($user->save(), "Can't save user");
     }
 
     /**
-     * @Given this service with URI :arg1 and access permissions :arg2
+     * @Given this service with URI :uri and access permissions :permissions
      */
-    public function thisServiceWithUriAndAccessPermissions($arg1, $arg2)
+    public function thisServiceWithUriAndAccessPermissions($uri, $permissions)
     {
         throw new PendingException();
     }

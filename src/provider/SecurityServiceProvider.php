@@ -4,12 +4,12 @@ namespace phalconer\provider;
 
 use phalconer\provider\AbstractServiceProvider;
 
-class SessionServiceProvider extends AbstractServiceProvider
+class SecurityServiceProvider extends AbstractServiceProvider
 {
     /**
      * @var string
      */
-    protected $serviceName = 'session';
+    protected $serviceName = 'security';
     
     /**
      * {@inheritdoc}
@@ -24,11 +24,14 @@ class SessionServiceProvider extends AbstractServiceProvider
             $this->di->setShared(
                 $this->serviceName,
                 function() use($config) {
-                    $class = $config->get('class', \Phalcon\Session\Adapter\Files::class);
-                    $session = new $class();
-                    $session->start();
-
-                    return $session;
+                    $class = $config->get('class', \Phalcon\Security::class);
+                    $security = new $class();
+                    $workFactor = $config->get('workFactor', false);
+                    if ($workFactor) {
+                        $security->setWorkFactor($workFactor);
+                    }
+                    
+                    return $security;
                 }
             );
         }

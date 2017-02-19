@@ -29,7 +29,7 @@ class UserTable extends AbstractMigration
     {
         $this->table('user')
             ->addColumn('name', 'string', ['limit' => 255, 'collation' => 'utf8_unicode_ci'])
-            ->addColumn('email', 'string', ['limit' => 255, 'collation' => 'utf8_unicode_ci'])
+            ->addColumn('email', 'string', ['limit' => 255, 'collation' => 'utf8_unicode_ci', 'null' => true])
             ->addColumn('password_hash', 'string', ['limit' => 60, 'collation' => 'utf8_unicode_ci'])
             ->addIndex(['name'], ['unique' => true])
             ->addIndex(['email'], ['unique' => true])

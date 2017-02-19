@@ -14,7 +14,6 @@ class CryptServiceProvider extends AbstractServiceProvider
     
     /**
      * {@inheritdoc}
-     * The URL component is used to generate all kind of urls in the application.
      *
      * @return void
      */

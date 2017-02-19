@@ -25,7 +25,7 @@ class UrlServiceProvider extends AbstractServiceProvider
             $this->di->setShared(
                 $this->serviceName,
                 function() use($config) {
-                    $class = $config->get('class', '\Phalcon\Mvc\Url');
+                    $class = $config->get('class', \Phalcon\Mvc\Url::class);
                     $url = new $class();
                     $url->setStaticBaseUri($config->get('staticBaseUri', '/'));
                     $url->setBaseUri($config->get('baseUri', '/'));
