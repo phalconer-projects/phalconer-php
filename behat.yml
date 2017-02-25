@@ -2,12 +2,20 @@ default:
     autoload:
         '': %paths.base%/test
     suites:
-        story:
+        i18n:
             paths:
                 - %paths.base%/features/story
             contexts:
                 - story\I18nContext
+            filters:
+                tags: '@i18n'
+        user:
+            paths:
+                - %paths.base%/features/story
+            contexts:
                 - story\UserContext
+            filters:
+                tags: '@user'
         spec:
             paths:
                 - %paths.base%/features/spec

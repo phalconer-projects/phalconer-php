@@ -3,7 +3,6 @@
 namespace phalconer\provider;
 
 use phalconer\provider\AbstractServiceProvider;
-use Phalcon\Flash\Direct;
 
 class FlashServiceProvider extends AbstractServiceProvider
 {
@@ -25,7 +24,9 @@ class FlashServiceProvider extends AbstractServiceProvider
             $this->di->setShared(
                 $this->serviceName,
                 function() use($config) {
-                    return new Direct($config['direct']);
+                    $class = $config->get('class', \Phalcon\Flash\Direct::class);
+                    $flash = new $class($config->get('styles', []));
+                    return $flash;
                 }
             );
         }

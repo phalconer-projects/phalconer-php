@@ -1,3 +1,4 @@
+@i18n
 Feature: Internationalization
   In order to provide textual content of site in different language
   As a developer

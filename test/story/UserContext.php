@@ -14,6 +14,37 @@ use Phalcon\DiInterface;
 use phalconer\Application;
 use phalconer\user\controller\UserController;
 use phalconer\user\model\User;
+use phalconer\common\controller\BaseController;
+
+class CommonUserTestController extends BaseController
+{
+    public $access = [
+        [
+            'roles' => ['guest'],
+            'actions' => ['index'],
+            'allow' => false
+        ]
+    ];
+    
+    public function allowAccess($roles)
+    {
+        $this->access[] = [
+            'roles' => $roles,
+            'actions' => ['index'],
+            'allow' => true
+        ];
+    }
+    
+    protected function access()
+    {
+        return $this->access;
+    }
+    
+    public function indexAction()
+    {
+        return 'test';
+    }
+}
 
 /**
  * Defines application features from the specific context.
@@ -50,6 +81,9 @@ class UserContext extends TestCase implements Context
                 ],
                 'security',
                 'url',
+                'flash' => [
+                    'class' => \Phalcon\Flash\Session::class
+                ],
                 'router',
                 'db' => [
                     'driver'   => 'mysql',
@@ -76,9 +110,9 @@ class UserContext extends TestCase implements Context
      */
     public function thisUserWithNameAndPassword($name, $pass)
     {
-        $count = User::count("name = '$name'");
+        $count = User::count(['name = :name:', 'bind' => ['name' => $name]]);
         if ($count > 0) {
-            $user = User::findFirst("name = '$name'");
+            $user = User::findFirst(['name = :name:', 'bind' => ['name' => $name]]);
         } else {
             $user = new User();
             $user->name = $name;
@@ -88,19 +122,50 @@ class UserContext extends TestCase implements Context
     }
 
     /**
-     * @Given this service with URI :uri and access permissions :permissions
+     * @Given the :uri service with access roles :roles
      */
-    public function thisServiceWithUriAndAccessPermissions($uri, $permissions)
+    public function theServiceWithAccessRoles($uri, $roles)
     {
-        throw new PendingException();
+        $this->app->getDI()->set(
+            ucfirst($uri) . 'Controller',
+            function () use ($roles) {
+                $controller = new CommonUserTestController();
+                $controller->allowAccess($roles);
+                return $controller;
+            }
+        );
+        $this->assertTrue($this->app->getDI()->get(ucfirst($uri) . 'Controller') instanceof BaseController);
+    }
+
+    private function setupUri($uri)
+    {
+        $_SERVER['REQUEST_URI'] = $uri;
+        $_GET['_url'] = strlen($uri) > 1 ? $uri : '';
+    }
+    
+    /**
+     * @When I go to the :uri URI
+     */
+    public function iGoToTheUri($uri)
+    {
+        $this->setupUri($uri);
+        $this->app->run();
     }
 
     /**
-     * @When I request the :arg1 service
+     * @Then I see current URI equals :uri
      */
-    public function iRequestTheService($arg1)
+    public function iSeeCurrentUriEquals($uri)
     {
-        throw new PendingException();
+        $response = $this->app->getDI()->get('response');
+        if ($response->getStatusCode() === '302 Found') {
+            $location = $response->getHeaders()->get('Location');
+            $this->iGoToTheUri($location);
+        }
+        $this->assertEquals(
+                rtrim($uri, '/'),
+                rtrim($this->app->getDI()->get('router')->getRewriteUri(), '/')
+        );
     }
 
     /**
@@ -108,13 +173,18 @@ class UserContext extends TestCase implements Context
      */
     public function iSeeLoginForm()
     {
-        throw new PendingException();
+        $response = $this->app->getDI()->get('response');
+        if ($response->getStatusCode() === '302 Found') {
+            $location = $response->getHeaders()->get('Location');
+            $this->iGoToTheUri($location);
+        }
+        $this->assertEquals('login', $response->getContent());
     }
 
     /**
-     * @When I send login data with name :arg1 and password :arg2
+     * @When I send login data with name :name and password :password
      */
-    public function iSendLoginDataWithNameAndPassword($arg1, $arg2)
+    public function iSendLoginDataWithNameAndPassword($name, $password)
     {
         throw new PendingException();
     }

@@ -1,3 +1,4 @@
+@user
 Feature: User controll access
   In order to provide user identity and autorization functionality
   As a developer
@@ -16,8 +17,8 @@ Feature: User controll access
 
   Scenario: Login user
     Given this user with name "user" and password "pass"
-    And this service with URI "/test" and access permissions "logged only"
-    When I request the "/login" service
+    And the "test" service with access roles "[user]"
+    When I go to the "/test" URI
     Then I see login form
     When I send login data with name "ser" and password "pas"
     Then I see login form with message "Incorrect username/password"
