@@ -76,7 +76,6 @@ class ApcuAdapterWrapper extends Adapter implements AdapterInterface, \ArrayAcce
     public function query($translateKey, $placeholders = null)
     {
         $translation = $this->getTranslation($translateKey);
-//        print_r([$translateKey, $translation]);
         if (is_array($placeholders)) {
             foreach ($placeholders as $key => $value) {
                 $translation = str_replace('%' . $key . '%', $value, $translation);

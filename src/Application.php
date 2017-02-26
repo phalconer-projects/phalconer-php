@@ -67,6 +67,12 @@ class Application
             ErrorHandler::register();
         }
         
+        $trans = config('i18n.translator', false);
+        if ($trans) {
+            $translator = new Translator($this->di, $trans);
+            $this->di->setShared('translator', $translator);
+        }
+        
         $this->app = new MvcApplication($this->di);
         $this->di->setShared('phalcon-app', $this->app);
         $this->app->setDI($this->di);
@@ -151,14 +157,6 @@ class Application
         if ($this->di->has('translator')) {
             return $this->di->getShared('translator');
         }
-        
-        $config = config('i18n.translator', false);
-        if ($config) {
-            $translator = new Translator($this->di, $config);
-            $this->di->setShared('translator', $translator);
-            return $translator;
-        }
-        
         return NULL;
     }
     
