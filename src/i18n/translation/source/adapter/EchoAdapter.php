@@ -19,7 +19,7 @@ class EchoAdapter implements AdapterInterface
     
     public function _($translateKey, $placeholders = null)
     {
-        return $this->t($index, $placeholders);
+        return $this->t($translateKey, $placeholders);
     }
 
     public function query($index, $placeholders = null)
