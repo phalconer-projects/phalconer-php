@@ -55,6 +55,11 @@ class Translator extends AbstractSource
                 $this->initSourcesList($sources->toArray());
             }
             $this->defaultSourceName = $config->get('defaultSourceName', $this->getFirstSourceName());
+            
+            $register = $config->get('registerRedirectDispatcherEvent', false);
+            if ($register) {
+                $this->registerRedirectDispatcherEvent();
+            }
         }
     }
     
